@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event QR Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body style="font-family: Arial; text-align: center; padding: 20px;">
+  <h2>📷 Scan Your Event QR</h2>
+  <div id="reader" style="width: 500px; height: 400px;"></div>
+  <div id="status" style="margin-top: 20px;"></div>
+
+  <script>
+  const DEPLOYED_GAS_URL = "https://script.google.com/macros/s/AKfycby0bnfKtwfFkYQvWcu2n6JOpxdqZAwyRfJX5_ckVriTSsNBIjIIhZrdEtpf7fSrrrGcQg/exec";
+  let alreadyScanned = false;
+
+  function onScanSuccess(decodedText) {
+  if (alreadyScanned) return;
+  alreadyScanned = true;
+
+  console.log("✅ QR scanned:", decodedText);
+  document.getElementById("status").innerHTML = "🔍 Validating...";
+
+  const uuidMatch = decodedText.match(/[a-f0-9\-]{36}/);
+  if (uuidMatch) {
+    const uuid = uuidMatch[0];
+    const fullURL = `${DEPLOYED_GAS_URL}?uuid=${uuid}`;
+    console.log("🌐 Fetching:", fullURL);
+
+    fetch(fullURL)
+      .then(res => res.text())
+      .then(html => {
+        console.log("✅ Validation response received");
+
+        html5QrCode.stop().then(() => {
+          document.getElementById("reader").style.display = "none";
+
+          // Use iframe for better rendering
+          const iframe = document.createElement("iframe");
+          iframe.style.width = "100%";
+          iframe.style.height = "600px";
+          iframe.style.border = "none";
+          iframe.srcdoc = html;
+
+          const statusDiv = document.getElementById("status");
+          statusDiv.innerHTML = "";
+          statusDiv.appendChild(iframe);
+        });
+      })
+      .catch(err => {
+        console.error("❌ Fetch failed:", err);
+        document.getElementById("status").innerHTML = "❌ Server error.";
+        alreadyScanned = false;
+      });
+  } else {
+    console.warn("⚠️ No UUID match in QR:", decodedText);
+    document.getElementById("status").innerHTML = "❌ Invalid QR format.";
+    alreadyScanned = false;
+  }
+}
+
+  function onScanFailure(error) {
+    // Optional: console.log("No QR detected", error);
+  }
+
+  console.log("📸 Starting QR scanner...");
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScanSuccess,
+    onScanFailure
+  ).catch(err => {
+    console.error("❌ Camera error:", err);
+    document.getElementById("status").innerHTML = "❌ Camera access failed: " + err;
+  });
+</script>
+</body>
+</html>
