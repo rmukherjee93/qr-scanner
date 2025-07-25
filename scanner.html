@@ -10,7 +10,7 @@
   <div id="status" style="margin-top: 20px;"></div>
 
   <script>
-  const DEPLOYED_GAS_URL = "https://script.google.com/macros/s/AKfycby0bnfKtwfFkYQvWcu2n6JOpxdqZAwyRfJX5_ckVriTSsNBIjIIhZrdEtpf7fSrrrGcQg/exec";
+  const DEPLOYED_GAS_URL = "https://script.google.com/macros/s/AKfycbyBC6zIxqjAE2PEaGBzJ9VE1p1bllUF4bksDe3sMt617AluL7glRakmzrCZvNby9U7O/exec";
   let alreadyScanned = false;
 
   function onScanSuccess(decodedText) {
@@ -18,10 +18,6 @@
   alreadyScanned = true;
 
   console.log("✅ QR scanned:", decodedText);
-  
-  // Hide scanner immediately
-  document.getElementById("reader").style.display = "none";
-
   document.getElementById("status").innerHTML = "🔍 Validating...";
 
   const uuidMatch = decodedText.match(/[a-f0-9\-]{36}/);
@@ -35,16 +31,20 @@
       .then(html => {
         console.log("✅ Validation response received");
 
-        // Show response nicely
-        const iframe = document.createElement("iframe");
-        iframe.style.width = "100%";
-        iframe.style.height = "600px";
-        iframe.style.border = "none";
-        iframe.srcdoc = html;
+        html5QrCode.stop().then(() => {
+          document.getElementById("reader").style.display = "none";
 
-        const statusDiv = document.getElementById("status");
-        statusDiv.innerHTML = "";
-        statusDiv.appendChild(iframe);
+          // Use iframe for better rendering
+          const iframe = document.createElement("iframe");
+          iframe.style.width = "100%";
+          iframe.style.height = "600px";
+          iframe.style.border = "none";
+          iframe.srcdoc = html;
+
+          const statusDiv = document.getElementById("status");
+          statusDiv.innerHTML = "";
+          statusDiv.appendChild(iframe);
+        });
       })
       .catch(err => {
         console.error("❌ Fetch failed:", err);
@@ -55,10 +55,8 @@
     console.warn("⚠️ No UUID match in QR:", decodedText);
     document.getElementById("status").innerHTML = "❌ Invalid QR format.";
     alreadyScanned = false;
-    document.getElementById("reader").style.display = "block"; // Show scanner again
   }
 }
-
 
   function onScanFailure(error) {
     // Optional: console.log("No QR detected", error);
